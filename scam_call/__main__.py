@@ -1,6 +1,9 @@
 """Run the call simulator with synthetic messages."""
 
 import argparse
+import shutil
+import subprocess
+import sys
 
 from .flow import FOLLOW_UPS, Turn, assess, draft_report
 
@@ -27,14 +30,21 @@ def approve_handoff() -> bool:
         print("Please choose 1 (Let AI continue) or 2 (End call).")
 
 
-def run(demo: bool) -> None:
+def run(demo: bool, speaker: str | None = None) -> None:
     transcript: list[Turn] = []
     followups_sent = 0
     demo_turns = iter(DEMO_CALL)
 
     def reply(message: str) -> None:
+        nonlocal speaker
         transcript.append(Turn(len(transcript) + 1, "assistant", message))
-        print(f"Assistant: {message}")
+        print(f"Assistant: {message}", flush=True)
+        if speaker:
+            try:
+                subprocess.run([speaker, message], check=True)
+            except (OSError, subprocess.CalledProcessError):
+                print("Speech playback failed. Continuing in text.", file=sys.stderr)
+                speaker = None
 
     reply("Hi. What are you calling about?")
     while True:
@@ -74,7 +84,12 @@ def run(demo: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--demo", action="store_true", help="Run the scripted utility scam.")
-    run(parser.parse_args().demo)
+    parser.add_argument("--voice", action="store_true", help="Speak assistant replies on macOS.")
+    args = parser.parse_args()
+    speaker = shutil.which("say") if args.voice and sys.platform == "darwin" else None
+    if args.voice and speaker is None:
+        parser.error("--voice requires the macOS say command")
+    run(args.demo, speaker)
 
 
 if __name__ == "__main__":

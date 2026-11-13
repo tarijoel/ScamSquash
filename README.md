@@ -27,6 +27,14 @@ python3 -m scam_call
 
 The first command runs a scripted utility scam. The second lets you type synthetic caller replies. Press Enter on an empty line to end the call. The simulator uses deterministic screening rules, three scripted follow-up questions, and an in-memory transcript. It prints a draft containing the flagged statements and the caller's unverified claims. Model integration, live telephony, and a review UI are future work.
 
+## Interactive voice demo on macOS
+
+```sh
+python3 -m scam_call --voice
+```
+
+Your Mac speaks the assistant's replies using its built-in text-to-speech voice. Type the caller's lines in Terminal. When a call is flagged, choose **Let AI continue** to hear follow-up questions or **End call** to stop. The draft incident report appears in Terminal.
+
 See [AGENTS.md](AGENTS.md) for coordinating parallel work.
 
 ## Browser voice demo
