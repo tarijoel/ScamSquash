@@ -28,9 +28,14 @@ PAYMENT_REQUEST = (
     r"|\b(?:you (?:must|need to|have to)|unless you) pay\b)"
 )
 PHONE_NUMBER = r"(?<!\d)(?:\+1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}(?!\d)"
-ORGANIZATION = r"\b(?:i['’]m (?:with|from)|calling (?:from|on behalf of)|i represent)\s+([^.!?;\n]+)"
+ORGANIZATION = r"\b(?:(?:i['’]m|i am) (?:with|from)|calling (?:from|on behalf of)|i represent)\s+([^.!?;\n]+)"
 
 SIGNALS = (
+    (
+        "Request for personal or account information",
+        r"\b(?:ask for|need|require|provide|confirm|verify|share|give|send)\b"
+        r"[^.!?;\n]{0,55}\b(?:personal information|account (?:information|details))\b",
+    ),
     (
         "Mention of sensitive identity or banking information",
         r"\b(?:social security(?: number)?|ssn|bank(?:ing)? (?:information|details|account(?: number)?)"
