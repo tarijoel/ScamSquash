@@ -1,35 +1,54 @@
-# Working in parallel
+# ScamSquash agent handoff
 
-Read this file and the README before editing. Tell the other contributor what files you plan to own and agree on shared interface changes before starting them.
+The integrated development baseline is `agent/browser-voice` until its PR merges.
+Fetch before starting. Base new branches on `origin/agent/browser-voice` while
+that PR is open and on `origin/main` once it is merged.
 
-- Use one branch and one worktree per task. From a clean clone, fetch and run `git worktree add -b agent/<task> ../scam-call-<task> origin/main`. Use `main` as the base if working locally before the first push.
-- Check `git status --short --branch` before editing and before staging. Stage explicit paths. If you encounter unexpected changes, preserve them and coordinate with their owner.
-- Keep commits focused. Push your own branch and open a pull request to main. Merge one pull request at a time and check the next branch against updated main. Coordinate any overlapping changes and resolve conflicts with both contributors.
-- Avoid force pushes, hard resets, cleaning shared directories, and rewriting someone else's branch. GitHub branches and pull requests are the shared record of progress.
-- Use synthetic calls in examples and checks. Keep transcripts from actual calls and credentials outside Git.
+## Work in parallel
 
-## First milestone: call simulation and report review
+- Use one branch and worktree per task. For example, after fetching, run
+  `git worktree add -b agent/<task> ../scam-call-<task> origin/agent/browser-voice`.
+- Agree on file ownership and interface changes before editing. Check
+  `git status --short --branch` before edits and stage explicit paths.
+- Preserve unexpected changes. Push your own branch and use pull requests.
+  Coordinate overlapping edits and avoid force pushes or resets of shared work.
+- Use fictional test calls. Keep API keys, role links, transcripts, audio and
+  downloaded model files outside Git.
 
-### Codex — screening and evidence (`agent/screening-report`)
+## Current modes and ownership
 
-Own `scam_call/flow.py`.
+- Screening and evidence: `scam_call/flow.py` defines transcript turns, caller-only
+  detection, evidence citations and the incident draft. Preserve
+  `Turn(id, speaker, text)`, `assess(transcript)` and `draft_report(transcript)`.
+  Speaker roles are caller, receiver and assistant. Requests for sensitive data,
+  unusual payments and threats tied to payment can trigger takeover.
+- Local two-device room: `scam_call/local_room.py` and `scam_call/web/room.html`.
+  Run `python3 -m scam_call.local_room` on port 8767. The README covers ffmpeg,
+  CPU Whisper, Ollama, and the HTTPS tunnel. Share distinct Caller and Receiver
+  links. The room uses recorded turns, takes over automatically on caller
+  evidence, and uses Mac speech with a browser fallback. After End call, download
+  the transcript before selecting New call. New call keeps both role links.
+- OpenAI browser demo: `scam_call/browser.py`, `web/index.html`, and `web/app.js`
+  under `scam_call`. Run `python3 -m scam_call.browser` on port 8765. This is
+  the single-mic demo with alternating roles, a two-second pause, and automatic
+  takeover using the Realtime API. It requires available API quota.
+- CLI simulator: `scam_call/__main__.py`. Run `python3 -m scam_call --demo`
+  for a scripted check or `python3 -m scam_call --voice` for the interactive
+  macOS spoken demo.
+- Twilio conference trial: `python3 -m scam_call.phone_trial` serves conference
+  TwiML on port 8766. Two verified phones connected in the trial. Live PSTN
+  transcription and takeover are separate work; the trial blocks media streaming.
 
-- Improve the screening rules so routine urgency alone does not trigger a report. Keep every flag tied to a caller turn and its exact wording.
-- Add a concise incident summary to the draft, including the claimed organization, callback number, and payment request when supported by the transcript. Mark caller claims as unverified and cite the turn IDs.
-- Verify the scripted utility scam, a routine appointment reminder, and a message that sounds urgent but does not request money or credentials.
+## Next work and verification
 
-### Other agent — simulator and handoff (`agent/simulator-handoff`)
+The next useful checks are two-device playback in Safari and Chrome, a benign
+caller turn, a suspicious caller request, receiver lockout, and a draft with
+evidence. Confirm each phone shows its expected role. Verify that a New call
+clears prior turns and allows new recordings on the same links. Keep
+`/state`'s call ID and the upload's `X-Call` header in sync.
 
-Own `scam_call/__main__.py`.
-
-- After the first flag in interactive mode, show the screening reasons and offer **Let AI continue** or **End call**. Keep the scripted demo noninteractive.
-- Use the existing follow-up prompts after approval and retain the bounded turn count. Show the draft when a flagged call ends, including when the user ends it at the handoff.
-- Verify that both choices work and that a routine call never prompts for handoff.
-
-### Shared contract and integration
-
-Keep `Turn(id, speaker, text)`, `Evidence(reason, turn_id, quote)`, `FOLLOW_UPS`, `assess(transcript)`, and `draft_report(transcript)` compatible for this milestone. Treat the report as display text. Either branch should work against the current main on its own. Coordinate before changing shared files or interfaces.
-
-After both pull requests merge, run the scripted demo and try both interactive handoff choices. Keep live telephony and model integration for the next milestone.
-
-Run `python3 -m scam_call --demo` and try a benign call with `python3 -m scam_call` before opening a pull request that changes the flow.
+Run `python3 -m scam_call --demo`, `python3 -m compileall -q scam_call` and
+`git diff --check` before submitting changes. For room troubleshooting, first
+check the loopback server and Ollama, then verify the public tunnel. A working
+loopback room does not guarantee the phone links work. Cloudflare needs outbound
+port 7844 and its temporary hostname changes when the tunnel restarts.
