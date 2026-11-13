@@ -38,9 +38,11 @@ python3 -m scam_call.browser
 ```
 
 Open http://127.0.0.1:8765, click **Start voice demo**, and allow microphone access.
-Speak after the page says **Listening**. Use synthetic caller details. The voice service
-generates replies from the conversation. ScamSquash pauses for recipient approval if
-it flags the call. Click **End call** to see the incident draft.
+Share one mic and select **Caller** or **Receiver** before each turn. The AI stays
+silent until caller speech triggers the screening rules. After takeover, only the
+caller should speak. The AI asks up to three follow-up questions. Click **End call**
+to see the incident draft and **Download transcript** to save the text. Use fictional
+details and tell both participants that the demo transcribes their speech.
 
 This local demo streams microphone audio to OpenAI and keeps the API key on the
 Python server. It uses turn-taking with the mic muted while the assistant speaks.

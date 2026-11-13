@@ -130,7 +130,7 @@ class DemoHandler(BaseHTTPRequestHandler):
                 turns = []
                 for i, turn in enumerate(data, 1):
                     speaker, text = turn["speaker"], turn["text"]
-                    if speaker not in ("caller", "assistant") or not isinstance(text, str):
+                    if speaker not in ("caller", "receiver", "assistant") or not isinstance(text, str):
                         raise ValueError
                     turns.append(Turn(i, speaker, text))
             except (ValueError, TypeError, KeyError):

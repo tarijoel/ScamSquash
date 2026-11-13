@@ -8,7 +8,7 @@ from typing import Literal
 @dataclass(frozen=True)
 class Turn:
     id: int
-    speaker: Literal["caller", "assistant"]
+    speaker: Literal["caller", "receiver", "assistant"]
     text: str
 
 
@@ -31,6 +31,11 @@ PHONE_NUMBER = r"(?<!\d)(?:\+1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}(
 ORGANIZATION = r"\b(?:i['’]m (?:with|from)|calling (?:from|on behalf of)|i represent)\s+([^.!?;\n]+)"
 
 SIGNALS = (
+    (
+        "Mention of sensitive identity or banking information",
+        r"\b(?:social security(?: number)?|ssn|bank(?:ing)? (?:information|details|account(?: number)?)"
+        r"|routing number)\b",
+    ),
     (
         "Unusual payment request",
         rf"{PAYMENT_REQUEST}[^.!?;\n]{{0,60}}\b{PAYMENT_METHOD}\b"
@@ -73,6 +78,10 @@ def incident_details(transcript: list[Turn]) -> list[str]:
     for turn in transcript:
         if turn.speaker == "assistant":
             callback_prompted = turn.text == FOLLOW_UPS[1]
+            continue
+
+        if turn.speaker != "caller":
+            callback_prompted = False
             continue
 
         organization = re.search(ORGANIZATION, turn.text, re.IGNORECASE)

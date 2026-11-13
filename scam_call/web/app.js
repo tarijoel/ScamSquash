@@ -1,7 +1,10 @@
 const get = (id) => document.getElementById(id);
 const start = get("start");
 const end = get("end");
-const approve = get("approve");
+const speaker = get("speaker");
+const download = get("download");
+const labels = {caller: "Caller", receiver: "Receiver", assistant: "Assistant"};
+let completed;
 const status = get("status");
 const voice = get("voice");
 let active;
@@ -9,7 +12,7 @@ let active;
 function append(call, speaker, text) {
   call.turns.push({speaker, text});
   const line = document.createElement("li");
-  line.textContent = (speaker === "caller" ? "Caller: " : "Assistant: ") + text;
+  line.textContent = labels[speaker] + ": " + text;
   get("transcript").append(line);
 }
 
@@ -45,6 +48,9 @@ async function finish(call, message = "Call ended") {
   } catch {
     get("report").textContent = "Could not generate the draft. The transcript is still visible.";
   } finally {
+    completed = call.turns;
+    download.disabled = !completed.length;
+    speaker.disabled = false;
     active = null;
     start.disabled = false;
   }
@@ -54,12 +60,14 @@ function listen(call) {
   clearTimeout(call.timer);
   call.phase = "listening";
   call.track.enabled = true;
-  status.textContent = "Listening. Speak as the caller.";
+  speaker.disabled = call.takenOver;
+  status.textContent = call.takenOver ? "Listening to the caller." : "Listening to both people. Select the speaker before each turn.";
 }
 
 function reply(call, goal) {
   call.phase = "replying";
   call.track.enabled = false;
+  speaker.disabled = true;
   status.textContent = "Assistant replying…";
   call.channel.send(JSON.stringify({
     type: "response.create",
@@ -84,6 +92,12 @@ function followUp(call) {
 async function handleEvent(call, event) {
   if (active !== call || call.ended) return;
   switch (event.type) {
+    case "input_audio_buffer.speech_started":
+      if (call.phase === "listening") {
+        call.turnSpeaker = call.takenOver ? "caller" : speaker.value;
+        speaker.disabled = true;
+      }
+      break;
     case "input_audio_buffer.speech_stopped":
       if (call.phase === "listening") {
         call.phase = "transcribing";
@@ -101,24 +115,26 @@ async function handleEvent(call, event) {
       }
       call.phase = "checking";
       call.track.enabled = false;
-      append(call, "caller", event.transcript.trim());
+      append(call, call.takenOver ? "caller" : (call.turnSpeaker ?? speaker.value), event.transcript.trim());
+      call.turnSpeaker = null;
       const {evidence} = await review(call);
       if (call.ended) return;
-      if (evidence.length && !call.approved) {
-        call.phase = "handoff";
+      if (evidence.length && !call.takenOver) {
+        call.takenOver = true;
+        speaker.value = "caller";
         get("evidence").replaceChildren(...evidence.map((item) => {
           const line = document.createElement("li");
           line.textContent = `Turn ${item.turn} · ${item.reason} · “${item.quote}”`;
           return line;
         }));
         get("handoff").hidden = false;
-        status.textContent = "Paused for your decision.";
-      } else if (call.approved) {
+      }
+      if (call.takenOver) {
         followUp(call);
       } else if (call.turns.length >= 70) {
         finish(call, "Demo turn limit reached.");
       } else {
-        reply(call, "Respond to what the caller just said in one short sentence and ask what they need if unclear. Act as a fictional recipient.");
+        listen(call);
       }
       break;
     }
@@ -150,11 +166,13 @@ start.onclick = async () => {
     return;
   }
   start.disabled = true;
+  download.disabled = true;
+  speaker.value = "caller";
   get("transcript").replaceChildren();
   get("report").textContent = "The draft will appear when a flagged call ends.";
   status.textContent = "Connecting microphone…";
   const call = {
-    turns: [], approved: false, followUps: 0, ended: false,
+    turns: [], takenOver: false, followUps: 0, ended: false,
     phase: "connecting", peer: new RTCPeerConnection(),
   };
   active = call;
@@ -174,7 +192,7 @@ start.onclick = async () => {
     };
     call.channel = call.peer.createDataChannel("oai-events");
     call.channel.onopen = () => {
-      if (!call.ended) reply(call, "Greet the caller and ask what they are calling about.");
+      if (!call.ended) listen(call);
     };
     call.channel.onclose = () => finish(call, "Voice connection closed.");
     call.channel.onmessage = (message) => {
@@ -193,12 +211,16 @@ start.onclick = async () => {
   }
 };
 
-approve.onclick = () => {
-  const call = active;
-  if (call?.phase !== "handoff") return;
-  get("handoff").hidden = true;
-  call.approved = true;
-  followUp(call);
+download.onclick = () => {
+  if (!completed?.length) return;
+  const transcript = completed.map((turn, i) => `${i + 1}. ${labels[turn.speaker]}: ${turn.text}`).join("\n");
+  const file = new Blob([transcript], {type: "text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "scamsquash-transcript.txt";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
 end.onclick = () => {

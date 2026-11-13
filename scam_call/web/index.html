@@ -14,7 +14,7 @@
   section { background: #1c2925; border: 1px solid #3d5149; border-radius: 14px; padding: 1.2rem; }
   button { font: inherit; font-weight: 650; padding: .6rem 1rem; border: 0; border-radius: .5rem; cursor: pointer; margin-right: .35rem; }
   button:disabled { opacity: .5; cursor: default; }
-  #start, #approve { background: #cbef9f; color: #142011; }
+  #start { background: #cbef9f; color: #142011; }
   #handoff { border: 1px solid #d5ab67; padding: 1rem; border-radius: .5rem; }
   #transcript { padding-left: 1.5rem; overflow-wrap: anywhere; }
   li + li { margin-top: .55rem; }
@@ -23,14 +23,19 @@
 </style>
 <main>
   <h1>ScamSquash</h1>
-  <p>Play the caller. Speak into your mic and hear the assistant respond.</p>
+  <p>Share one microphone. Select who is speaking before each turn. Use fictional details.</p>
   <button id="start">Start voice demo</button>
   <button id="end" disabled>End call</button>
+  <label for="speaker">Speaking now</label>
+  <select id="speaker">
+    <option value="caller">Caller</option>
+    <option value="receiver">Receiver</option>
+  </select>
+  <button id="download" disabled>Download transcript</button>
   <p id="status" role="status">Ready</p>
   <div id="handoff" hidden>
-    <strong>Possible scam detected</strong>
+    <strong>Possible scam detected. AI took over for the receiver.</strong>
     <ul id="evidence"></ul>
-    <button id="approve">Let AI continue</button>
   </div>
   <div class="grid">
     <section><h2>Call transcript</h2><ol id="transcript"></ol></section>
