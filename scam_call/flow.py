@@ -30,27 +30,28 @@ PAYMENT_REQUEST = (
 PHONE_NUMBER = r"(?<!\d)(?:\+1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}(?!\d)"
 ORGANIZATION = r"\b(?:(?:i['’]m|i am) (?:with|from)|calling (?:from|on behalf of)|i represent)\s+([^.!?;\n]+)"
 
+SENSITIVE_INFORMATION = (
+    r"(?:social security(?: number)?|ssn|personal information"
+    r"|(?:bank(?:ing)? |account )?(?:account number|routing number)"
+    r"|(?:bank(?:ing)?(?: account)?|account) (?:information|details)"
+    r"|verification code|security code|one[- ]time code|password)"
+)
+SENSITIVE_REQUEST = (
+    r"\b(?:(?:i|we) (?:need|require|must have|am here to ask for|are here to ask for)"
+    r"|(?:can|could|would|will) you (?:read|tell|give|send|share|provide|confirm|verify)"
+    r"|(?:please )?(?:read|tell|give|send|share) (?:me|us)"
+    r"|please (?:provide|confirm|verify))"
+    r"\s+(?:(?:me|us|some of|the last four digits of|the|your|a|valid)\s+){0,5}"
+    rf"{SENSITIVE_INFORMATION}\b"
+)
+
 SIGNALS = (
-    (
-        "Request for personal or account information",
-        r"\b(?:ask for|need|require|provide|confirm|verify|share|give|send)\b"
-        r"[^.!?;\n]{0,55}\b(?:personal information|account (?:information|details))\b",
-    ),
-    (
-        "Mention of sensitive identity or banking information",
-        r"\b(?:social security(?: number)?|ssn|bank(?:ing)? (?:information|details|account(?: number)?)"
-        r"|routing number)\b",
-    ),
+    ("Request for sensitive identity, account, or login information", SENSITIVE_REQUEST),
     (
         "Unusual payment request",
         rf"{PAYMENT_REQUEST}[^.!?;\n]{{0,60}}\b{PAYMENT_METHOD}\b"
         rf"|\b(?:pay|send|transfer)\s+(?:me\s+|us\s+)?"
         rf"(?:(?:with|by|using|via|in)\s+)?{PAYMENT_METHOD}\b",
-    ),
-    (
-        "Request for a verification code or password",
-        r"\b(?:read|tell|give|send|share)\b[^.!?;\n]{0,45}"
-        r"\b(?:verification code|security code|one[- ]time code|password)\b",
     ),
     (
         "Threat tied to a payment request",
