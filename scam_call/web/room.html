@@ -64,6 +64,39 @@ function controls() {
     (recorder?.state !== "recording" && (state.busy || (state.takeover && state.role === "receiver")));
 }
 
+async function playTurn(turn) {
+  playing = true;
+  controls();
+  try {
+    const clip = await (await request("/audio/" + turn.id)).blob();
+    const url = URL.createObjectURL(clip);
+    if (player.src.startsWith("blob:")) URL.revokeObjectURL(player.src);
+    player.src = url;
+    player.hidden = false;
+    lastPlayed = Math.max(lastPlayed, turn.id);
+    player.onplay = () => { playing = true; controls(); };
+    player.onpause = player.onended = player.onerror = () => {
+      playing = false;
+      controls();
+    };
+    await player.play().catch(() => {
+      playing = false;
+      if (!state.ended) el("status").textContent = "Tap Play to hear the latest turn.";
+      controls();
+    });
+  } catch (error) {
+    if (turn.speaker === "assistant" && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(turn.text);
+      utterance.onend = utterance.onerror = () => { playing = false; controls(); };
+      lastPlayed = Math.max(lastPlayed, turn.id);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      playing = false;
+      throw error;
+    }
+  }
+}
+
 async function refresh() {
   if (refreshing) return;
   refreshing = true;
@@ -87,11 +120,27 @@ async function refresh() {
     el("connection").hidden = true;
     el("role").textContent = state.role === "caller" ? "Caller" : "Receiver";
     el("end").hidden = state.role !== "receiver" || state.ended;
-    el("turns").replaceChildren(...state.turns.map(({speaker, text}) => {
+    const transcriptKey = state.call + ":" + state.turns.length;
+    if (el("turns").dataset.key !== transcriptKey) {
+      el("turns").dataset.key = transcriptKey;
+      el("turns").replaceChildren(...state.turns.map((turn) => {
+      const {speaker, text} = turn;
       const line = document.createElement("li");
       line.textContent = speaker + ": " + text;
+      const replay = document.createElement("button");
+      replay.type = "button";
+      replay.textContent = "Play recording";
+      replay.onclick = () => {
+        if (recorder?.state === "recording") {
+          showError(new Error("Send your turn before playing a recording."));
+          return;
+        }
+        playTurn(turn).catch(showError);
+      };
+      line.append(" ", replay);
       return line;
-    }));
+      }));
+    }
     if (state.ended) {
       mic?.getTracks().forEach(track => track.stop());
       mic = null;
@@ -103,36 +152,7 @@ async function refresh() {
     if (mic && !playing && !pending && recorder?.state !== "recording") {
       const turn = state.turns.find(t => t.id > lastPlayed && t.speaker !== state.role);
       if (turn) {
-        playing = true;
-        controls();
-        try {
-          const clip = await (await request("/audio/" + turn.id)).blob();
-          const url = URL.createObjectURL(clip);
-          if (player.src.startsWith("blob:")) URL.revokeObjectURL(player.src);
-          player.src = url;
-          player.hidden = false;
-          lastPlayed = turn.id;
-          player.onplay = () => { playing = true; controls(); };
-          player.onpause = player.onended = player.onerror = () => {
-            playing = false;
-            controls();
-          };
-          await player.play().catch(() => {
-            playing = false;
-            if (!state.ended) el("status").textContent = "Tap Play to hear the latest turn.";
-            controls();
-          });
-        } catch (error) {
-          if (turn.speaker === "assistant" && window.speechSynthesis) {
-            const utterance = new SpeechSynthesisUtterance(turn.text);
-            utterance.onend = utterance.onerror = () => { playing = false; controls(); };
-            lastPlayed = turn.id;
-            window.speechSynthesis.speak(utterance);
-          } else {
-            playing = false;
-            throw error;
-          }
-        }
+        await playTurn(turn);
       }
     }
     controls();
