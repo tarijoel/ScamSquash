@@ -50,7 +50,6 @@ async function finish(call, message = "Call ended") {
   } finally {
     completed = call.turns;
     download.disabled = !completed.length;
-    speaker.disabled = false;
     active = null;
     start.disabled = false;
   }
@@ -60,15 +59,13 @@ function listen(call) {
   clearTimeout(call.timer);
   call.phase = "listening";
   call.track.enabled = true;
-  speaker.disabled = call.takenOver;
-  status.textContent = call.takenOver ? "Listening to the caller." : "Listening to both people. Select the speaker before each turn.";
+  status.textContent = `Listening. ${labels[speaker.value]} speaks now.`;
 }
 
 function reply(call, goal) {
   if (!call.takenOver) return;
   call.phase = "replying";
   call.track.enabled = false;
-  speaker.disabled = true;
   status.textContent = "Assistant replying…";
   call.channel.send(JSON.stringify({
     type: "response.create",
@@ -96,7 +93,6 @@ async function handleEvent(call, event) {
     case "input_audio_buffer.speech_started":
       if (call.phase === "listening") {
         call.turnSpeaker = call.takenOver ? "caller" : speaker.value;
-        speaker.disabled = true;
       }
       break;
     case "input_audio_buffer.speech_stopped":
@@ -116,8 +112,9 @@ async function handleEvent(call, event) {
       }
       call.phase = "checking";
       call.track.enabled = false;
-      append(call, call.takenOver ? "caller" : (call.turnSpeaker ?? speaker.value), event.transcript.trim());
+      const turnSpeaker = call.turnSpeaker ?? speaker.value;
       call.turnSpeaker = null;
+      append(call, turnSpeaker, event.transcript.trim());
       const {evidence} = await review(call);
       if (call.ended) return;
       if (evidence.length && !call.takenOver) {
@@ -135,6 +132,7 @@ async function handleEvent(call, event) {
       } else if (call.turns.length >= 70) {
         finish(call, "Demo turn limit reached.");
       } else {
+        speaker.value = turnSpeaker === "caller" ? "receiver" : "caller";
         listen(call);
       }
       break;
@@ -168,7 +166,8 @@ start.onclick = async () => {
   }
   start.disabled = true;
   download.disabled = true;
-  speaker.value = "receiver";
+  speaker.value = "caller";
+  speaker.disabled = true;
   get("transcript").replaceChildren();
   get("report").textContent = "The draft will appear when a flagged call ends.";
   status.textContent = "Connecting microphone…";

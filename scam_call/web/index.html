@@ -23,13 +23,13 @@
 </style>
 <main>
   <h1>ScamSquash</h1>
-  <p>Receiver starts the conversation. Share one microphone and select who is speaking before each turn. Use fictional details.</p>
+  <p>The caller speaks first. Share one microphone and wait for the speaker label to switch after a two-second pause. Use fictional details.</p>
   <button id="start">Start listening</button>
   <button id="end" disabled>End call</button>
-  <label for="speaker">Speaking now</label>
-  <select id="speaker">
+  <label for="speaker">Current speaker</label>
+  <select id="speaker" disabled>
     <option value="caller">Caller</option>
-    <option value="receiver" selected>Receiver</option>
+    <option value="receiver">Receiver</option>
   </select>
   <button id="download" disabled>Download transcript</button>
   <p id="status" role="status">Ready</p>

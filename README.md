@@ -38,8 +38,10 @@ python3 -m scam_call.browser
 ```
 
 Open http://127.0.0.1:8765, click **Start listening**, and allow microphone access.
-The receiver speaks first. Share one mic and select **Caller** or **Receiver** before each turn. The AI stays
-silent until caller speech triggers the screening rules. After takeover, only the
+The caller speaks first. Share one mic and wait for two seconds of silence after
+each turn. Once the transcript is checked, the page switches between **Caller**
+and **Receiver** automatically. The AI stays silent until caller speech triggers
+the screening rules. After takeover, only the
 caller should speak. The AI asks up to three follow-up questions. Click **End call**
 to see the incident draft and **Download transcript** to save the text. Use fictional
 details and tell both participants that the demo transcribes their speech.

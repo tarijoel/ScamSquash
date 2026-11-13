@@ -27,6 +27,7 @@ SESSION = {
             "transcription": {"model": "gpt-4o-mini-transcribe", "language": "en"},
             "turn_detection": {
                 "type": "server_vad",
+                "silence_duration_ms": 2000,
                 "create_response": False,
                 "interrupt_response": False,
             },
