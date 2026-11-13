@@ -15,3 +15,16 @@ Hackathon prototype that flags suspected scam calls, takes over with a simulated
 - AI conversation and report: build the simulated recipient's replies and turn those transcript events into a report the recipient can review.
 
 Agree on a shared transcript format first: timestamp, speaker, and text. Start with synthetic fixtures so both pieces can be built and demoed independently. Choose the runtime, model, and any phone integration after confirming the implementation plan.
+
+## Run the starter
+
+Requires Python 3.10 or newer. From the repository root:
+
+```sh
+python3 -m scam_call --demo
+python3 -m scam_call
+```
+
+The first command runs a scripted utility scam. The second lets you type synthetic caller replies. Press Enter on an empty line to end the call. The simulator uses deterministic screening rules, three scripted follow-up questions, and an in-memory transcript. It prints a draft containing the flagged statements and the caller's unverified claims. Model integration, live telephony, and a review UI are future work.
+
+See [AGENTS.md](AGENTS.md) for coordinating parallel work.
