@@ -79,6 +79,7 @@ async function refresh() {
     if (state.ended) {
       mic?.getTracks().forEach(track => track.stop());
       el("join").disabled = true;
+      el("status").textContent = "Call ended. You can download the transcript below.";
       el("draft").hidden = false;
       el("report").textContent = state.report;
     }
@@ -94,9 +95,15 @@ async function refresh() {
           player.src = url;
           player.hidden = false;
           lastPlayed = turn.id;
-          player.onended = player.onerror = () => { playing = false; controls(); };
+          player.onplay = () => { playing = true; controls(); };
+          player.onpause = player.onended = player.onerror = () => {
+            playing = false;
+            controls();
+          };
           await player.play().catch(() => {
-            el("status").textContent = "Tap Play to hear the latest turn.";
+            playing = false;
+            if (!state.ended) el("status").textContent = "Tap Play to hear the latest turn.";
+            controls();
           });
         } catch (error) {
           if (turn.speaker === "assistant" && window.speechSynthesis) {
