@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScamSquash Voice Demo</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #111a18; color: #eef5ee; font: 16px/1.5 "DM Sans", system-ui, sans-serif; }
+  main { max-width: 950px; padding: 3rem 1.25rem; margin: auto; }
+  h1 { font-size: clamp(2.4rem, 7vw, 4rem); line-height: 1; margin: .4rem 0; }
+  h2 { font-size: 1.2rem; margin-top: 0; }
+  p { color: #c4d1c7; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+  section { background: #1c2925; border: 1px solid #3d5149; border-radius: 14px; padding: 1.2rem; }
+  button { font: inherit; font-weight: 650; padding: .6rem 1rem; border: 0; border-radius: .5rem; cursor: pointer; margin-right: .35rem; }
+  button:disabled { opacity: .5; cursor: default; }
+  #start, #approve { background: #cbef9f; color: #142011; }
+  #handoff { border: 1px solid #d5ab67; padding: 1rem; border-radius: .5rem; }
+  #transcript { padding-left: 1.5rem; overflow-wrap: anywhere; }
+  li + li { margin-top: .55rem; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+</style>
+<main>
+  <h1>ScamSquash</h1>
+  <p>Play the caller. Speak into your mic and hear the assistant respond.</p>
+  <button id="start">Start voice demo</button>
+  <button id="end" disabled>End call</button>
+  <p id="status" role="status">Ready</p>
+  <div id="handoff" hidden>
+    <strong>Possible scam detected</strong>
+    <ul id="evidence"></ul>
+    <button id="approve">Let AI continue</button>
+  </div>
+  <div class="grid">
+    <section><h2>Call transcript</h2><ol id="transcript"></ol></section>
+    <section><h2>Incident draft</h2><pre id="report">The draft will appear when a flagged call ends.</pre></section>
+  </div>
+  <audio id="voice" autoplay></audio>
+</main>
+<script src="/app.js" defer></script>
+</html>

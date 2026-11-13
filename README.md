@@ -28,3 +28,20 @@ python3 -m scam_call
 The first command runs a scripted utility scam. The second lets you type synthetic caller replies. Press Enter on an empty line to end the call. The simulator uses deterministic screening rules, three scripted follow-up questions, and an in-memory transcript. It prints a draft containing the flagged statements and the caller's unverified claims. Model integration, live telephony, and a review UI are future work.
 
 See [AGENTS.md](AGENTS.md) for coordinating parallel work.
+
+## Browser voice demo
+
+From the browser voice worktree, set `OPENAI_API_KEY` in your Terminal environment and run:
+
+```sh
+python3 -m scam_call.browser
+```
+
+Open http://127.0.0.1:8765, click **Start voice demo**, and allow microphone access.
+Speak after the page says **Listening**. Use synthetic caller details. The voice service
+generates replies from the conversation. ScamSquash pauses for recipient approval if
+it flags the call. Click **End call** to see the incident draft.
+
+This local demo streams microphone audio to OpenAI and keeps the API key on the
+Python server. It uses turn-taking with the mic muted while the assistant speaks.
+The server binds to loopback. A Realtime-enabled API project is required.
