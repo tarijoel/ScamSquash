@@ -55,6 +55,27 @@ def open_session(offer: str, key: str) -> bytes:
         return response.read()
 
 
+def session_error(error: HTTPError) -> str:
+    try:
+        code = json.loads(error.read(16384))["error"]["code"]
+    except (ValueError, KeyError, TypeError, OSError):
+        code = None
+
+    if error.code == 429:
+        if code in ("insufficient_quota", "credit_balance_exhausted", "billing_hard_limit_reached"):
+            return "OpenAI API quota is exhausted. Check the credit balance and limits for the API key's organization."
+        if code in ("project_spend_limit_exceeded", "organization_spend_limit_exceeded",
+                    "organization_usage_limit_exceeded", "usage_limit_exceeded"):
+            return "The API project or organization reached its spend or usage limit. Check API platform settings."
+        if code in ("rate_limit_exceeded", "slow_down"):
+            retry = error.headers.get("Retry-After", "")
+            if retry.isascii() and retry.isdigit() and len(retry) <= 6:
+                return f"OpenAI temporarily limited voice requests. Wait {retry} seconds before trying again."
+            return "OpenAI temporarily limited voice requests. Wait a moment, then try again."
+        return "OpenAI returned HTTP 429. Check API credits and project limits. If both are available, wait and retry."
+    return f"OpenAI rejected the voice session (HTTP {error.code}). Check your API key and model access."
+
+
 class DemoHandler(BaseHTTPRequestHandler):
     def send_body(self, status: int, content_type: str, body: bytes) -> None:
         self.send_response(status)
@@ -95,7 +116,7 @@ class DemoHandler(BaseHTTPRequestHandler):
             try:
                 answer = open_session(body, key)
             except HTTPError as error:
-                self.send_body(502, "text/plain", f"OpenAI rejected the voice session (HTTP {error.code}). Check your API key, billing, and model access.".encode())
+                self.send_body(502, "text/plain", session_error(error).encode())
                 return
             except (URLError, TimeoutError):
                 self.send_body(502, "text/plain", b"Could not reach the voice service. Try again.")
