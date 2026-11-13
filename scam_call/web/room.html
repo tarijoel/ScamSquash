@@ -23,6 +23,7 @@ pre { white-space: pre-wrap; font: inherit; }
 <button id="join">Enable microphone and audio</button>
 <button id="talk" disabled>Record turn</button>
 <button id="end" hidden>End call</button>
+<button id="new" hidden>New call</button>
 <p id="status" role="status"></p>
 <p id="connection" role="status" hidden></p>
 <audio id="audio" controls hidden></audio>
@@ -43,7 +44,7 @@ let pending = false;
 let refreshing = false;
 
 async function request(path, options = {}) {
-  const response = await fetch(path, {...options, headers});
+  const response = await fetch(path, {...options, headers: {...headers, ...options.headers}});
   const kind = response.headers.get("Content-Type") || "";
   if (!response.ok) {
     const details = kind.includes("application/json") ? await response.json().catch(() => null) : null;
@@ -67,7 +68,22 @@ async function refresh() {
   if (refreshing) return;
   refreshing = true;
   try {
+    const previousCall = state?.call;
     state = await (await request("/state")).json();
+    if (previousCall !== undefined && previousCall !== state.call) {
+      lastPlayed = 0;
+      player.pause();
+      if (player.src.startsWith("blob:")) URL.revokeObjectURL(player.src);
+      player.removeAttribute("src");
+      player.hidden = true;
+      window.speechSynthesis?.cancel();
+      playing = false;
+      el("draft").hidden = true;
+      el("join").disabled = false;
+      el("status").textContent = "New call ready. Enable your microphone to join.";
+    }
+    el("new").hidden = state.role !== "receiver" || !state.ended;
+    el("new").disabled = state.busy;
     el("connection").hidden = true;
     el("role").textContent = state.role === "caller" ? "Caller" : "Receiver";
     el("end").hidden = state.role !== "receiver" || state.ended;
@@ -78,6 +94,7 @@ async function refresh() {
     }));
     if (state.ended) {
       mic?.getTracks().forEach(track => track.stop());
+      mic = null;
       el("join").disabled = true;
       el("status").textContent = "Call ended. You can download the transcript below.";
       el("draft").hidden = false;
@@ -144,6 +161,7 @@ talk.onclick = () => {
   try {
     recorder = new MediaRecorder(mic);
     const chunks = [];
+    const call = state.call;
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     recorder.onstop = async () => {
       clearTimeout(timer);
@@ -151,7 +169,7 @@ talk.onclick = () => {
       pending = true;
       controls();
       try {
-        await request("/turn", {method: "POST", body: new Blob(chunks, {type: recorder.mimeType})});
+        await request("/turn", {method: "POST", headers: {"X-Call": String(call)}, body: new Blob(chunks, {type: recorder.mimeType})});
         el("status").textContent = "Turn sent.";
       } catch (error) {
         el("status").textContent = error.message;
@@ -169,6 +187,7 @@ talk.onclick = () => {
 };
 
 el("end").onclick = () => request("/end", {method: "POST"}).then(refresh).catch(showError);
+el("new").onclick = () => request("/new", {method: "POST"}).then(refresh).catch(showError);
 el("save").onclick = () => {
   const text = state.turns.map(t => `${t.id}. ${t.speaker}: ${t.text}`).join("\n");
   const url = URL.createObjectURL(new Blob([text], {type: "text/plain"}));

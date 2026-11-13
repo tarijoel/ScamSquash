@@ -19,6 +19,7 @@ AUDIO = []
 TAKEOVER = False
 ENDED = False
 BUSY = False
+CALL = 1
 WEB = Path(__file__).with_name("web")
 LIMIT = 40
 
@@ -103,7 +104,7 @@ class RoomHandler(BaseHTTPRequestHandler):
         with LOCK:
             if self.path == "/state":
                 state = {
-                    "role": role, "takeover": TAKEOVER, "ended": ENDED, "busy": BUSY,
+                    "call": CALL, "role": role, "takeover": TAKEOVER, "ended": ENDED, "busy": BUSY,
                     "turns": [{"id": t.id, "speaker": t.speaker, "text": t.text} for t in TURNS],
                     "report": draft_report(TURNS) if ENDED else "",
                 }
@@ -120,10 +121,24 @@ class RoomHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self) -> None:
-        global BUSY, ENDED, TAKEOVER
+        global BUSY, ENDED, TAKEOVER, CALL
         role = self.role()
         if role is None:
             self.reply_json({"error": "Open your private room link."}, 403)
+            return
+        if self.path == "/new":
+            with LOCK:
+                if role != "receiver":
+                    status = 403
+                elif not ENDED or BUSY:
+                    status = 409
+                else:
+                    TURNS.clear()
+                    AUDIO.clear()
+                    TAKEOVER = ENDED = False
+                    CALL += 1
+                    status = 200
+            self.reply_json({} if status == 200 else {"error": "Only the receiver can start a new call after the current call ends."}, status)
             return
         if self.path == "/end":
             if role != "receiver":
@@ -145,7 +160,8 @@ class RoomHandler(BaseHTTPRequestHandler):
             self.reply_json({"error": "Unsupported audio or recording too large."}, 400)
             return
         with LOCK:
-            if BUSY or ENDED or (TAKEOVER and role == "receiver"):
+            if (self.headers.get("X-Call") != str(CALL) or BUSY or ENDED
+                    or (TAKEOVER and role == "receiver")):
                 self.reply_json({"error": "This microphone turn is unavailable."}, 409)
                 return
             BUSY = True

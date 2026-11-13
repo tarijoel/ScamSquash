@@ -77,4 +77,4 @@ window. For each link printed by the room server, replace
 `http://127.0.0.1:8767` with the tunnel's HTTPS address, keeping its unique
 `/#...` suffix. Give the caller link to your friend and open the receiver link
 yourself. Keep the links private and use fictional details. If audio does not
-start automatically on your phone, tap Play. Restart the room server for a new call.
+start automatically on your phone, tap Play. After downloading the transcript, the receiver can click **New call** to clear the room and reuse both links.
