@@ -35,7 +35,7 @@ def transcribe(data: bytes) -> str:
         )
         subprocess.run(
             ["whisper-cli", "-m", os.environ["SCAMSQUASH_WHISPER_MODEL"], "-f", str(wav),
-             "-nt", "-otxt", "-of", str(root / "transcript")],
+             "-ng", "-nt", "-otxt", "-of", str(root / "transcript")],
             check=True, timeout=60, capture_output=True,
         )
         return (root / "transcript.txt").read_text().strip()
