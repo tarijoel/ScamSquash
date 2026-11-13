@@ -51,3 +51,30 @@ details and tell both participants that the demo transcribes their speech.
 This local demo streams microphone audio to OpenAI and keeps the API key on the
 Python server. It uses turn-taking with the mic muted while the assistant speaks.
 The server binds to loopback. A Realtime-enabled API project is required.
+
+## Two-device room without paid APIs
+
+This macOS demo uses recorded turns. Each participant taps **Record turn**, speaks,
+and taps **Send turn**. The other device plays the recording. A suspicious caller
+turn locks the receiver's mic and triggers a generated spoken follow-up. Both
+participants can hear it. The receiver can end the call and both can download the
+transcript. Audio and transcripts are held in memory until the server stops.
+
+Install the local tools and download the English Whisper model:
+
+```sh
+brew install ffmpeg whisper.cpp ollama
+model_dir="$(git rev-parse --path-format=absolute --git-common-dir)/scamsquash-models"
+mkdir -p "$model_dir"
+curl -fL https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin -o "$model_dir/ggml-base.en.bin"
+export SCAMSQUASH_WHISPER_MODEL="$model_dir/ggml-base.en.bin"
+```
+
+Run `ollama serve` in another Terminal window. In the first window run
+`ollama pull qwen2.5:1.5b`, then `python3 -m scam_call.local_room`.
+For phones, run `cloudflared tunnel --url http://127.0.0.1:8767` in another
+window. For each link printed by the room server, replace
+`http://127.0.0.1:8767` with the tunnel's HTTPS address, keeping its unique
+`/#...` suffix. Give the caller link to your friend and open the receiver link
+yourself. Keep the links private and use fictional details. If audio does not
+start automatically on your phone, tap Play. Restart the room server for a new call.
