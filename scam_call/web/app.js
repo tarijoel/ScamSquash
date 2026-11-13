@@ -65,6 +65,7 @@ function listen(call) {
 }
 
 function reply(call, goal) {
+  if (!call.takenOver) return;
   call.phase = "replying";
   call.track.enabled = false;
   speaker.disabled = true;
@@ -167,7 +168,7 @@ start.onclick = async () => {
   }
   start.disabled = true;
   download.disabled = true;
-  speaker.value = "caller";
+  speaker.value = "receiver";
   get("transcript").replaceChildren();
   get("report").textContent = "The draft will appear when a flagged call ends.";
   status.textContent = "Connecting microphone…";
