@@ -173,11 +173,14 @@ class RoomHandler(BaseHTTPRequestHandler):
                 message = assistant_reply(history, first)
                 if not message:
                     raise ValueError("Empty assistant reply")
-                speech = speak(message)
+                try:
+                    speech = speak(message)
+                except (OSError, subprocess.SubprocessError):
+                    speech = b""
                 with LOCK:
                     if not ENDED:
                         TURNS.append(Turn(len(TURNS) + 1, "assistant", message))
-                        AUDIO.append((speech, "audio/mpeg"))
+                        AUDIO.append((speech, "audio/mpeg") if len(speech) > 128 else None)
                         ENDED = len(TURNS) >= LIMIT
             self.reply_json({})
         except (OSError, subprocess.SubprocessError, KeyError, ValueError):
