@@ -13,6 +13,20 @@ DEMO_CALL = (
 )
 
 
+def approve_handoff() -> bool:
+    """Ask the recipient before the simulated AI takes over."""
+    while True:
+        try:
+            choice = input("1. Let AI continue\n2. End call\nChoose 1 or 2: ").strip().casefold()
+        except EOFError:
+            return False
+        if choice in {"1", "let ai continue"}:
+            return True
+        if choice in {"2", "end call", ""}:
+            return False
+        print("Please choose 1 (Let AI continue) or 2 (End call).")
+
+
 def run(demo: bool) -> None:
     transcript: list[Turn] = []
     followups_sent = 0
@@ -44,6 +58,9 @@ def run(demo: bool) -> None:
         if followups_sent == 0:
             reasons = ", ".join(dict.fromkeys(item.reason for item in evidence))
             print(f"Screening alert: {reasons}")
+            if not demo and not approve_handoff():
+                reply("I'm going to end the call now.")
+                break
         if followups_sent == len(FOLLOW_UPS):
             reply("Thanks. I'm going to end the call now.")
             break
