@@ -118,7 +118,8 @@ async function refresh() {
     el("new").hidden = state.role !== "receiver" || !state.ended;
     el("new").disabled = state.busy;
     el("connection").hidden = true;
-    el("role").textContent = state.role === "caller" ? "Caller" : "Receiver";
+    el("role").textContent = state.role === "caller" ? "You are the caller" : "You are the receiver";
+    if (recorder?.state !== "recording") talk.textContent = "Record as " + state.role;
     el("end").hidden = state.role !== "receiver" || state.ended;
     const transcriptKey = state.call + ":" + state.turns.length;
     if (el("turns").dataset.key !== transcriptKey) {
@@ -185,7 +186,7 @@ talk.onclick = () => {
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     recorder.onstop = async () => {
       clearTimeout(timer);
-      talk.textContent = "Record turn";
+      talk.textContent = "Record as " + state.role;
       pending = true;
       controls();
       try {

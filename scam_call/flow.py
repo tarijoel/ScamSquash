@@ -31,16 +31,16 @@ PHONE_NUMBER = r"(?<!\d)(?:\+1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}(
 ORGANIZATION = r"\b(?:(?:i['’]m|i am) (?:with|from)|calling (?:from|on behalf of)|i represent)\s+([^.!?;\n]+)"
 
 SENSITIVE_INFORMATION = (
-    r"(?:social security(?: number)?|ssn|personal information"
+    r"(?:social security(?: number)?|ssns?|personal information"
     r"|(?:bank(?:ing)? |account )?(?:account number|routing number)"
     r"|(?:bank(?:ing)?(?: account)?|account) (?:information|details)"
     r"|verification code|security code|one[- ]time code|password)"
 )
 SENSITIVE_REQUEST = (
-    r"\b(?:(?:i|we) (?:need|require|must have|am here to ask for|are here to ask for)"
+    r"\b(?:(?:i|we) (?:need|want|require|must have|am here to ask for|are here to ask for)"
     r"|(?:can|could|would|will) you (?:read|tell|give|send|share|provide|confirm|verify)"
     r"|(?:please )?(?:read|tell|give|send|share) (?:me|us)"
-    r"|please (?:provide|confirm|verify))"
+    r"|please (?:provide|confirm|verify)|let me (?:get|have))"
     r"\s+(?:(?:me|us|some of|the last four digits of|the|your|a|valid)\s+){0,5}"
     rf"{SENSITIVE_INFORMATION}\b"
 )
@@ -50,7 +50,7 @@ SIGNALS = (
     (
         "Unusual payment request",
         rf"{PAYMENT_REQUEST}[^.!?;\n]{{0,60}}\b{PAYMENT_METHOD}\b"
-        rf"|\b(?:pay|send|transfer)\s+(?:me\s+|us\s+)?"
+        rf"|\b(?:pay|paying|send|transfer)\s+(?:me\s+|us\s+)?"
         rf"(?:(?:with|by|using|via|in)\s+)?{PAYMENT_METHOD}\b",
     ),
     (
