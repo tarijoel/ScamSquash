@@ -43,8 +43,16 @@ let refreshing = false;
 
 async function request(path, options = {}) {
   const response = await fetch(path, {...options, headers});
+  const kind = response.headers.get("Content-Type") || "";
   if (!response.ok) {
-    throw new Error((await response.json()).error || "Room request failed.");
+    const details = kind.includes("application/json") ? await response.json().catch(() => null) : null;
+    throw new Error(details?.error || `Room request failed (HTTP ${response.status}).`);
+  }
+  if (path === "/state" && !kind.includes("application/json")) {
+    throw new Error("The room server returned a web page. Refresh using your private room link.");
+  }
+  if (path.startsWith("/audio/") && !kind.startsWith("audio/")) {
+    throw new Error("This audio clip is unavailable.");
   }
   return response;
 }
