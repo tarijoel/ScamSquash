@@ -24,6 +24,7 @@ pre { white-space: pre-wrap; font: inherit; }
 <button id="talk" disabled>Record turn</button>
 <button id="end" hidden>End call</button>
 <p id="status" role="status"></p>
+<p id="connection" role="status" hidden></p>
 <audio id="audio" controls hidden></audio>
 </section>
 <section><h2>Transcript</h2><ol id="turns"></ol></section>
@@ -67,6 +68,7 @@ async function refresh() {
   refreshing = true;
   try {
     state = await (await request("/state")).json();
+    el("connection").hidden = true;
     el("role").textContent = state.role === "caller" ? "Caller" : "Receiver";
     el("end").hidden = state.role !== "receiver" || state.ended;
     el("turns").replaceChildren(...state.turns.map(({speaker, text}) => {
@@ -170,7 +172,12 @@ el("save").onclick = () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 function showError(error) { el("status").textContent = error.message; }
-refresh().catch(showError);
-setInterval(() => refresh().catch(showError), 750);
+function showConnectionError(error) {
+  const notice = el("connection");
+  notice.textContent = error.message + " Checking again automatically…";
+  notice.hidden = false;
+}
+refresh().catch(showConnectionError);
+setInterval(() => refresh().catch(showConnectionError), 750);
 </script>
 </html>
